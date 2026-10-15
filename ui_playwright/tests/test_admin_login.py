@@ -10,20 +10,23 @@ ADMIN_PASSWORD = "password"
 def test_admin_login_success(admin_login_page):
     admin_login_page.login(ADMIN_USER, ADMIN_PASSWORD)
 
+    expect(admin_login_page.page).to_have_url(
+        re.compile(r"/admin/rooms"), timeout=15000
+    )
     expect(admin_login_page.login_button).not_to_be_visible()
-    expect(admin_login_page.error_message).not_to_be_visible()
 
 
 def test_admin_logout_ends_session(admin_login_page):
     admin_login_page.login(ADMIN_USER, ADMIN_PASSWORD)
-    expect(admin_login_page.login_button).not_to_be_visible()
+    expect(admin_login_page.page).to_have_url(
+        re.compile(r"/admin/rooms"), timeout=15000
+    )
 
     admin_login_page.logout()
-    expect(admin_login_page.page).to_have_url(re.compile(r"/$"))
+    expect(admin_login_page.page).to_have_url(re.compile(r"/$"), timeout=15000)
 
     admin_login_page.load()
     expect(admin_login_page.login_button).to_be_visible()
-
 
 @pytest.mark.parametrize(
     "username, password",

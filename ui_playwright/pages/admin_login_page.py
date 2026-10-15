@@ -11,7 +11,7 @@ class AdminLoginPage:
         self.error_message = page.get_by_text("Invalid credentials")
 
     def load(self):
-        self.page.goto("/admin")
+        self.page.goto("/admin", wait_until="domcontentloaded")
 
     def login(self, username, password):
         self.username_input.fill(username)

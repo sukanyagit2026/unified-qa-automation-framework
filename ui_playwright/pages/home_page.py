@@ -12,7 +12,7 @@ class HomePage:
         self.submit_button = page.get_by_role("button", name="Submit")
 
     def load(self):
-        self.page.goto("/")
+        self.page.goto("/", wait_until="domcontentloaded")
 
     def fill_contact_form(self, name, email, phone, subject, message):
         self.name_input.fill(name)
