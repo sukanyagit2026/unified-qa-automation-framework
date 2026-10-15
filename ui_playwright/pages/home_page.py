@@ -26,3 +26,6 @@ class HomePage:
 
     def success_heading(self, name):
         return self.page.get_by_text(f"Thanks for getting in touch {name}!")
+
+    def error_message(self, text):
+        return self.page.get_by_text(text, exact=True)
