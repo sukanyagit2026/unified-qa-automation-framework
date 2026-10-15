@@ -31,3 +31,6 @@ class BookingPage:
 
     def confirmed_dates(self, checkin, checkout):
         return self.page.get_by_text(f"{checkin} - {checkout}", exact=True)
+
+    def error_message(self, text):
+        return self.page.get_by_text(text, exact=True)
