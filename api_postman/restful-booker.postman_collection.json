@@ -1,0 +1,398 @@
+{
+  "info": {
+    "_postman_id": "4e08e3b7-fd01-4de4-acac-7d386c3940ca",
+    "name": "Restful-Booker API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "58077030",
+    "_collection_link": "https://go.postman.co/collection/58077030-4e08e3b7-fd01-4de4-acac-7d386c3940ca?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Get all rooms",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Response time is under 2000 ms\", function () {\r\n    pm.expect(pm.response.responseTime).to.be.below(2000);\r\n});\r\n\r\npm.test(\"Response contains a non-empty rooms list\", function () {\r\n    const body = pm.response.json();\r\n    pm.expect(body.rooms).to.be.an(\"array\").that.is.not.empty;\r\n});\r\n\r\npm.test(\"Every room has the expected fields and types\", function () {\r\n    pm.response.json().rooms.forEach(function (room) {\r\n        pm.expect(room.roomid).to.be.a(\"number\");\r\n        pm.expect(room.roomName).to.be.a(\"string\");\r\n        pm.expect(room.roomPrice).to.be.a(\"number\").and.to.be.above(0);\r\n        pm.expect(room.type).to.be.a(\"string\");\r\n        pm.expect(room.features).to.be.an(\"array\");\r\n        pm.expect(room.accessible).to.be.a(\"boolean\");\r\n    });\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/room",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "room"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get room by ID - known defect",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// KNOWN DEFECT (to be logged in JIRA): GET /api/room/{id} returns 500 for an existing room.\r\n// Expected 200 with the room details. Update this test when the defect is fixed.\r\npm.test(\"KNOWN DEFECT: existing room lookup returns 500 instead of 200\", function () {\r\n    pm.response.to.have.status(500);\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/room/1",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "room",
+            "1"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get room - invalid ID",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Server responds with an error status (not 2xx)\", function () {\r\n    pm.expect(pm.response.code).to.be.at.least(400);\r\n});\r\n\r\npm.test(\"Error body is JSON with status, error and path fields\", function () {\r\n    const body = pm.response.json();\r\n    pm.expect(body.status).to.eql(pm.response.code);\r\n    pm.expect(body.error).to.be.a(\"string\");\r\n    pm.expect(body.path).to.be.a(\"string\");\r\n});\r\n\r\n// KNOWN DEFECT (same root cause as 'Get room by ID'): lookup by ID returns 500 for any ID.\r\n// A missing room should return 404.\r\npm.test(\"KNOWN DEFECT: missing room returns 500 instead of 404\", function () {\r\n    pm.expect(pm.response.code).to.eql(500);\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/room/99999",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "room",
+            "99999"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Admin login",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Response contains a non-empty token\", function () {\r\n    const body = pm.response.json();\r\n    pm.expect(body.token).to.be.a(\"string\").and.to.not.be.empty;\r\n    pm.collectionVariables.set(\"token\", body.token);\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"username\": \"admin\",\r\n  \"password\": \"password\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Admin login - wrong password",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 401 Unauthorized\", function () {\r\n    pm.response.to.have.status(401);\r\n});\r\n\r\npm.test(\"Error message is 'Invalid credentials'\", function () {\r\n    pm.expect(pm.response.json().error).to.eql(\"Invalid credentials\");\r\n});\r\n\r\npm.test(\"No token is returned\", function () {\r\n    pm.expect(pm.response.json()).to.not.have.property(\"token\");\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"username\": \"admin\",\r\n  \"password\": \"wrongpassword\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Validate token",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200 for a valid token\", function () {\r\n    pm.response.to.have.status(200);\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"token\": \"{{token}}\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/validate",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "validate"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Create booking",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const start = new Date();\r\nstart.setDate(start.getDate() + 60 + Math.floor(Math.random() * 600));\r\nconst end = new Date(start);\r\nend.setDate(end.getDate() + 2);\r\npm.collectionVariables.set(\"checkin\", start.toISOString().slice(0, 10));\r\npm.collectionVariables.set(\"checkout\", end.toISOString().slice(0, 10));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 201 Created\", function () {\r\n    pm.response.to.have.status(201);\r\n});\r\n\r\npm.test(\"Booking echoes the submitted details\", function () {\r\n    const body = pm.response.json();\r\n    pm.expect(body.bookingid).to.be.a(\"number\");\r\n    pm.expect(body.roomid).to.eql(1);\r\n    pm.expect(body.firstname).to.eql(\"Sukanya\");\r\n    pm.expect(body.lastname).to.eql(\"Boopathirajan\");\r\n    pm.expect(body.bookingdates.checkin).to.eql(pm.collectionVariables.get(\"checkin\"));\r\n    pm.expect(body.bookingdates.checkout).to.eql(pm.collectionVariables.get(\"checkout\"));\r\n    pm.collectionVariables.set(\"bookingId\", body.bookingid);\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"roomid\": 1,\r\n  \"firstname\": \"Sukanya\",\r\n  \"lastname\": \"Boopathirajan\",\r\n  \"depositpaid\": false,\r\n  \"email\": \"sukanya.test@example.com\",\r\n  \"phone\": \"89045678678\",\r\n  \"bookingdates\": {\r\n    \"checkin\": \"{{checkin}}\",\r\n    \"checkout\": \"{{checkout}}\"\r\n  }\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/booking",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "booking"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get booking by ID",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Returns the booking that was just created\", function () {\r\n    const body = pm.response.json();\r\n    pm.expect(body.bookingid).to.eql(Number(pm.collectionVariables.get(\"bookingId\")));\r\n    pm.expect(body.roomid).to.eql(1);\r\n    pm.expect(body.firstname).to.eql(\"Sukanya\");\r\n    pm.expect(body.bookingdates.checkin).to.eql(pm.collectionVariables.get(\"checkin\"));\r\n    pm.expect(body.bookingdates.checkout).to.eql(pm.collectionVariables.get(\"checkout\"));\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Cookie",
+            "value": "token={{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/booking/{{bookingId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "booking",
+            "{{bookingId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Delete booking",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 202 Accepted\", function () {\r\n    pm.response.to.have.status(202);\r\n});\r\n\r\npm.test(\"Response body is empty\", function () {\r\n    pm.expect(pm.response.text()).to.eql(\"\");\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Cookie",
+            "value": "token={{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/booking/{{bookingId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "booking",
+            "{{bookingId}}"
+          ],
+          "query": [
+            {
+              "key": "Cookie",
+              "value": "token={{token}}",
+              "disabled": true
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get booking - after delete",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Deleted booking returns 404 Not Found\", function () {\r\n    pm.response.to.have.status(404);\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Cookie",
+            "value": "token={{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/booking/{{bookingId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "booking",
+            "{{bookingId}}"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": ""
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "checkin",
+      "value": ""
+    },
+    {
+      "key": "checkout",
+      "value": ""
+    },
+    {
+      "key": "bookingId",
+      "value": ""
+    }
+  ]
+}
