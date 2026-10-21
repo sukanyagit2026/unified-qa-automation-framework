@@ -5,3 +5,7 @@ reports/
 test-results/
 *.pyc
 .idea/target/
+soap_soapui/reports/
+soapui-errors.log
+soapui.log
+global-groovy.log
