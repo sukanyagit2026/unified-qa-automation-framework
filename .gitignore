@@ -4,4 +4,4 @@ __pycache__/
 reports/
 test-results/
 *.pyc
-.idea/
+.idea/target/

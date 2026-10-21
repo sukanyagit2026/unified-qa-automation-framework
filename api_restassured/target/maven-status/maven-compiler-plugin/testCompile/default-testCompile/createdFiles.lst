@@ -1,0 +1,4 @@
+api\AuthApiTest.class
+api\BaseApiTest.class
+api\BookingApiTest.class
+api\RoomApiTest.class
