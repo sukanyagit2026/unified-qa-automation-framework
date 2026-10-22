@@ -3,7 +3,6 @@ package api;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 class RoomApiTest extends BaseApiTest {
@@ -22,13 +21,14 @@ class RoomApiTest extends BaseApiTest {
     }
 
     @Test
-    @Disabled("KNOWN DEFECT: GET /api/room/{id} returns 500 for an existing room (expected 200). Enable when fixed.")
     void getRoomByIdReturnsRoom() {
         given()
         .when()
             .get("/api/room/1")
         .then()
             .statusCode(200)
-            .body("roomid", equalTo(1));
+            .body("roomid", equalTo(1))
+            .body("roomName", notNullValue())
+            .body("roomPrice", greaterThan(0));
     }
 }
