@@ -58,3 +58,72 @@ jobs:
         with:
           name: ui-test-report
           path: report.html
+
+  api-tests-restassured:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "8"
+          cache: maven
+
+      - name: Run REST Assured tests
+        run: mvn -B test
+        working-directory: api_restassured
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: restassured-report
+          path: api_restassured/target/surefire-reports
+
+  api-tests-postman:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Newman
+        run: npm install -g newman newman-reporter-htmlextra
+
+      - name: Run Postman collection
+        run: newman run api_postman/restful-booker.postman_collection.json -r cli,htmlextra --reporter-htmlextra-export newman-report.html
+
+      - name: Upload Newman report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: postman-report
+          path: newman-report.html
+
+  soap-tests-soapui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "8"
+
+      - name: Download SoapUI
+        run: |
+          for v in 5.10.0 5.9.1; do
+            if curl -fsSL -o soapui.tar.gz "https://dl.eviware.com/soapuios/$v/SoapUI-$v-linux-bin.tar.gz"; then
+              echo "Using SoapUI $v"
+              echo "SOAPUI_VERSION=$v" >> "$GITHUB_ENV"
+              break
+            fi
+          done
+          tar -xzf soapui.tar.gz
+
+      - name: Run SoapUI test suite
+        run: |
+          chmod +x
