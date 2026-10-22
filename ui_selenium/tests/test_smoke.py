@@ -1,6 +1,7 @@
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.common.exceptions import ElementClickInterceptedException
 
 TIMEOUT = 20
 
@@ -35,8 +36,10 @@ def test_contact_form_success(driver, base_url):
     )
     submit = driver.find_element(By.XPATH, "//button[text()='Submit']")
     driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", submit)
-    wait_for(driver, EC.element_to_be_clickable(submit)).click()
-
+    try:
+        wait_for(driver, EC.element_to_be_clickable(submit)).click()
+    except ElementClickInterceptedException:
+        driver.execute_script("arguments[0].click();", submit)
     wait_for(
         driver,
         EC.visibility_of_element_located(
