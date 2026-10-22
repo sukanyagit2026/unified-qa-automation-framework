@@ -4,12 +4,11 @@ on:
   push:
     branches: [main]
   pull_request:
-  workflow_dispatch:
+    branches: [main]
 
 jobs:
   ui-tests:
     runs-on: ubuntu-latest
-
     services:
       postgres:
         image: postgres:16
@@ -23,34 +22,39 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
-
     env:
       HEADLESS: "1"
       QA_ENV: github-actions
-
+      QA_DB_HOST: localhost
+      QA_DB_PORT: "5433"
+      QA_DB_NAME: qa_results
+      QA_DB_USER: postgres
+      QA_DB_PASSWORD: qa_pass
+      PGPASSWORD: qa_pass
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.14"
-          cache: pip
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
       - name: Install Playwright browser
         run: playwright install --with-deps chromium
 
       - name: Create results tables
-        run: psql "postgresql://postgres:qa_pass@localhost:5433/qa_results" -f db/schema.sql
+        run: psql -h localhost -p 5433 -U postgres -d qa_results -f db/schema.sql
 
-      - name: Run Playwright and Selenium tests
+      - name: Run UI tests
         run: pytest -v --html=report.html --self-contained-html
 
-      - name: Results summary from PostgreSQL
+      - name: Show result analysis
         if: always()
-        run: psql "postgresql://postgres:qa_pass@localhost:5433/qa_results" -f db/queries.sql
+        run: psql -h localhost -p 5433 -U postgres -d qa_results -f db/queries.sql
 
       - name: Upload test report
         if: always()
@@ -68,17 +72,16 @@ jobs:
         with:
           distribution: temurin
           java-version: "8"
-          cache: maven
 
       - name: Run REST Assured tests
-        run: mvn -B test
         working-directory: api_restassured
+        run: mvn -B test
 
-      - name: Upload test reports
+      - name: Upload surefire reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: restassured-report
+          name: restassured-reports
           path: api_restassured/target/surefire-reports
 
   api-tests-postman:
@@ -94,13 +97,17 @@ jobs:
         run: npm install -g newman newman-reporter-htmlextra
 
       - name: Run Postman collection
-        run: newman run api_postman/restful-booker.postman_collection.json -r cli,htmlextra --reporter-htmlextra-export newman-report.html
+        run: |
+          newman run api_postman/restful-booker.postman_collection.json \
+            --env-var "baseUrl=https://automationintesting.online" \
+            -r cli,htmlextra \
+            --reporter-htmlextra-export newman-report.html
 
       - name: Upload Newman report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: postman-report
+          name: newman-report
           path: newman-report.html
 
   soap-tests-soapui:
@@ -115,15 +122,30 @@ jobs:
 
       - name: Download SoapUI
         run: |
+          mkdir -p "$HOME/soapui"
           for v in 5.10.0 5.9.1; do
             if curl -fsSL -o soapui.tar.gz "https://dl.eviware.com/soapuios/$v/SoapUI-$v-linux-bin.tar.gz"; then
-              echo "Using SoapUI $v"
-              echo "SOAPUI_VERSION=$v" >> "$GITHUB_ENV"
+              tar -xzf soapui.tar.gz -C "$HOME/soapui"
+              echo "Downloaded SoapUI $v"
               break
             fi
           done
-          tar -xzf soapui.tar.gz
+          find "$HOME/soapui" -maxdepth 3 -name testrunner.sh
 
       - name: Run SoapUI test suite
         run: |
-          chmod +x
+          TESTRUNNER=$(find "$HOME/soapui" -name testrunner.sh | head -n 1)
+          if [ -z "$TESTRUNNER" ]; then
+            echo "testrunner.sh not found"
+            exit 1
+          fi
+          echo "Using $TESTRUNNER"
+          chmod +x "$(dirname "$TESTRUNNER")"/*.sh
+          "$TESTRUNNER" "-sCalculator Tests" -r -j "-fsoapui-reports" soap_soapui/Calculator-soapui-project.xml
+
+      - name: Upload SoapUI reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: soapui-reports
+          path: soapui-reports
