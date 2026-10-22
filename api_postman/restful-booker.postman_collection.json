@@ -37,14 +37,14 @@
       "response": []
     },
     {
-      "name": "Get room by ID - known defect",
+      "name": "Get room by ID",
       "event": [
         {
           "listen": "test",
           "script": {
             "type": "text/javascript",
             "exec": [
-              "// KNOWN DEFECT (to be logged in JIRA): GET /api/room/{id} returns 500 for an existing room.\r\n// Expected 200 with the room details. Update this test when the defect is fixed.\r\npm.test(\"KNOWN DEFECT: existing room lookup returns 500 instead of 200\", function () {\r\n    pm.response.to.have.status(500);\r\n});"
+              "pm.test(\"Existing room lookup returns 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});"
             ]
           }
         }
