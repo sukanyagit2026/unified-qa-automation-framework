@@ -36,7 +36,8 @@ def pytest_runtest_logreport(report):
     is_call = report.when == "call"
     is_setup_problem = report.when == "setup" and (report.failed or report.skipped)
     is_teardown_failure = report.when == "teardown" and report.failed
-    if not (is_call or is_setup_problem or is_teardown_failure):
+    is_rerun = report.outcome == "rerun"
+    if not (is_call or is_setup_problem or is_teardown_failure or is_rerun):
         return
 
     suite = report.nodeid.split("/")[0]
