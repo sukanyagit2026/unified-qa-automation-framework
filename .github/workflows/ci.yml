@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  ui-tests:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: qa_pass
+          POSTGRES_DB: qa_results
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      HEADLESS: "1"
+      QA_ENV: github-actions
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install Playwright browser
+        run: playwright install --with-deps chromium
+
+      - name: Create results tables
+        run: psql "postgresql://postgres:qa_pass@localhost:5433/qa_results" -f db/schema.sql
+
+      - name: Run Playwright and Selenium tests
+        run: pytest -v --html=report.html --self-contained-html
+
+      - name: Results summary from PostgreSQL
+        if: always()
+        run: psql "postgresql://postgres:qa_pass@localhost:5433/qa_results" -f db/queries.sql
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-test-report
+          path: report.html
